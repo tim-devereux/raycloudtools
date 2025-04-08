@@ -18,6 +18,8 @@ RUN apt-get update && apt-get upgrade -y && \
     libproj-dev \
     libgeotiff-dev \
     libgtest-dev \
+    linux-tools \
+    time \    
     libboost-all-dev && \
     rm -rf /var/lib/apt/lists/*
     
