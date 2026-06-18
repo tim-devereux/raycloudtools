@@ -43,7 +43,7 @@ public:
 void connectPointsShortestPath(
   std::vector<Vertex> &points,
   std::priority_queue<QueueNode, std::vector<QueueNode>, QueueNodeComparator> &closest_node, double distance_limit,
-  double gravity_factor)
+  double gravity_factor, bool alpha_weighting)
 {
   // 1. get nearest neighbours
   const int search_size = std::min(20, static_cast<int>(points.size()) - 1);
@@ -91,8 +91,10 @@ void connectPointsShortestPath(
         }
         const double d = std::max(0.001, dif.dot(dir));
         // we are looking for a minimum score, so large distances are bad, but new points in line with the
-        // path direction are good
-        double score = dist2 / (d * d);
+        // path direction are good. When alpha_weighting is on, a higher alpha weight reduces the score so
+        // high-weight points are preferred
+        const double connect_weight = alpha_weighting ? (double)points[child].weight : 1.0;
+        double score = dist2 / (d * d * connect_weight);
 
         if (gravity_factor > 0.0)  // penalise paths that are hard to hold up against gravity (lateral direction)
         {
@@ -130,7 +132,7 @@ void connectPointsShortestPath(
 /// the returned vector of index sets provides the root points for each separated tree
 std::vector<std::vector<int>> getRootsAndSegment(std::vector<Vertex> &points, const Cloud &cloud, const Mesh &mesh,
                                                  double max_diameter, double distance_limit, double height_min,
-                                                 double gravity_factor)
+                                                 double gravity_factor, bool alpha_weighting)
 {
   // first fill in the basic attributes of the points structure
   points.reserve(cloud.ends.size());
@@ -138,7 +140,10 @@ std::vector<std::vector<int>> getRootsAndSegment(std::vector<Vertex> &points, co
   {
     if (cloud.rayBounded(i))
     {
-      points.push_back(Vertex(cloud.ends[i], cloud.starts[i]));
+      // always store the point's alpha as its weight; the alpha_weighting and segment_alpha_weighting
+      // flags independently decide whether the weight is used (for path connection and radius fitting)
+      const uint8_t weight = cloud.colours[i].alpha > 0 ? cloud.colours[i].alpha : 1;
+      points.push_back(Vertex(cloud.ends[i], cloud.starts[i], weight));
     }
   }
 
@@ -190,7 +195,7 @@ std::vector<std::vector<int>> getRootsAndSegment(std::vector<Vertex> &points, co
   }
 
   // perform Djikstra's shortest path to ground algorithm to fill in the parent indices in 'points'
-  connectPointsShortestPath(points, closest_node, distance_limit, gravity_factor);
+  connectPointsShortestPath(points, closest_node, distance_limit, gravity_factor, alpha_weighting);
 
   // next we want to segment the paths into separate trees. To do this we find the number of points and
   // the maximum height of points that come from each cell index

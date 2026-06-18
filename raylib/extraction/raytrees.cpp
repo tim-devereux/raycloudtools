@@ -23,6 +23,8 @@ TreesParams::TreesParams()
   , segment_branches(false)
   , global_taper(0.012)
   , global_taper_factor(0.3)
+  , alpha_weighting(false)
+  , segment_alpha_weighting(false)
 {}
 
 /// The main reconstruction algorithm
@@ -34,7 +36,7 @@ Trees::Trees(Cloud &cloud, const Eigen::Vector3d &offset, const Mesh &mesh, cons
   params_ = &params;
 
   std::vector<std::vector<int>> roots_list = getRootsAndSegment(
-    points_, cloud, mesh, params_->max_diameter, params_->distance_limit, params_->height_min, params_->gravity_factor);
+    points_, cloud, mesh, params_->max_diameter, params_->distance_limit, params_->height_min, params_->gravity_factor, params_->alpha_weighting);
 
   // Now we want to convert these paths into a set of branch sections, from root to tips
   // splitting as we go up...
@@ -834,50 +836,66 @@ double Trees::estimateCylinderRadius(const std::vector<int> &nodes, const Eigen:
   // get the mean radius
   double power = 0.25; // when 1 this is usual radius, but lower powers reduce outliers due to foliage
   std::vector<double> norms;
+  std::vector<double> weights; // per-point weights, used when alpha weighting is enabled
   norms.reserve(nodes.size());
-  if (params_->use_rays)
+  weights.reserve(nodes.size());
+
+  // Defines how aggressively to apply the alpha weights. Higher values create stronger separation.
+  const double alpha_power = 1.0;
+
+  // Calculate the distance (norm) and weight for each point
+  for (auto &node : nodes)
   {
-    for (auto &node : nodes)
+    Eigen::Vector3d offset = points_[node].pos - sections_[sec_].tip;
+    offset -= dir * offset.dot(dir); // flatten
+    if (params_->use_rays)
     {
-      Eigen::Vector3d offset = points_[node].pos - sections_[sec_].tip;
-      offset -= dir * offset.dot(dir); // flatten    
       Eigen::Vector3d ray = points_[node].start - points_[node].pos;
       ray -= dir * ray.dot(dir); // flatten
-      offset += ray*std::max(0.0, std::min(-offset.dot(ray)/ray.dot(ray), 1.0)); // move to closest point
-      norms.push_back(offset.norm());
+      offset += ray * std::max(0.0, std::min(-offset.dot(ray) / ray.dot(ray), 1.0)); // move to closest point
     }
-  }
-  else
-  {
-    for (auto &node : nodes)
+    norms.push_back(offset.norm());
+
+    // Default weight (all points equal). When segment_alpha_weighting is set, weight by the
+    // normalised point cloud alpha so opaque (high alpha) points dominate the fit.
+    double alpha_weight = 1.0;
+    if (params_->segment_alpha_weighting)
     {
-      Eigen::Vector3d offset = points_[node].pos - sections_[sec_].tip;
-      offset -= dir * offset.dot(dir); // flatten    
-      norms.push_back(offset.norm());
+      const double normalized_alpha = static_cast<double>(points_[node].weight) / 255.0;
+      alpha_weight = std::pow(normalized_alpha, alpha_power);
     }
+    weights.push_back(alpha_weight);
   }
 
-  for (auto &norm: norms)
+  // Weighted power-law averaging (uses either 1.0 or the alpha weight per point)
+  double rad_numerator = 0.0;
+  double weight_sum = 0.0;
+  for (size_t i = 0; i < norms.size(); i++)
   {
-    rad += std::pow(norm, power);
+    rad_numerator += weights[i] * std::pow(norms[i], power);
+    weight_sum += weights[i];
   }
+
   const double eps = 1e-5; // prevent division by 0
-  rad /= (double)nodes.size() + eps;
-  rad = std::pow(rad, 1.0/power);
-  double e = 0.0;
-  for (auto &norm : norms)
+  if (weight_sum < eps)
   {
-    e += std::abs(norm - rad);
+    accuracy = 0.0;
+    rad = 0.0;
+    return rad;
   }
-  e /= (double)nodes.size() + eps;
-#define NEW_ACCURACY
-#if defined NEW_ACCURACY
+  rad = rad_numerator / weight_sum;
+  rad = std::pow(rad, 1.0/power);
+
+  // Weighted error calculation for accuracy
+  double e = 0.0;
+  for (size_t i = 0; i < norms.size(); i++)
+  {
+    e += weights[i] * std::abs(norms[i] - rad);
+  }
+  e /= weight_sum;
+
   const double sensor_noise = 0.02; // this prevents cylinders with a small number of very accurate points from totally dominating
   accuracy = rad / (e + sensor_noise);
-#else // this one goes down to 0, which could be bad if all cylinder points were low accuracy
-  accuracy = std::max(eps, rad - 2.0*e) / std::max(eps, rad); // so even distribution is accuracy 0, and cylinder shell is accuracy 1 
-  accuracy *= std::min((double)nodes.size() / 3.0, 1.0);
-#endif
   accuracy = std::max(accuracy, eps);
   rad = std::max(rad, eps);
 

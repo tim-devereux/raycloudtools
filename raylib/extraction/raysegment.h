@@ -18,7 +18,7 @@ namespace ray
 /// Vertex structure used in shortest path algorithm
 struct RAYLIB_EXPORT Vertex
 {
-  Vertex(const Eigen::Vector3d &pos, const Eigen::Vector3d &start)
+  Vertex(const Eigen::Vector3d &pos, const Eigen::Vector3d &start, uint8_t weight = 1)
     : pos(pos), start(start)
     , parent(-1)
     , root(-1)
@@ -26,6 +26,7 @@ struct RAYLIB_EXPORT Vertex
     , distance_to_end(0.0)
     , score(std::numeric_limits<double>::max())
     , visited(false)
+    , weight(weight)
   {}
   Eigen::Vector3d pos;
   Eigen::Vector3d start;
@@ -34,6 +35,7 @@ struct RAYLIB_EXPORT Vertex
   double distance_to_end;
   double score;
   bool visited;
+  uint8_t weight; // point cloud alpha used as a weight when alpha_weighting is enabled
 };
 
 /// Converts a ray cloud to a set of points @c points connected by the shortest path to the ground @c mesh
@@ -42,9 +44,10 @@ struct RAYLIB_EXPORT Vertex
 /// @c max_diameter maximum diameter of a tree trunk
 /// @c distance_limit maximum distance between points that can be connected
 /// @c gravity_factor controls how far laterally the shortest paths can travel
+/// @c alpha_weighting uses the point cloud alpha channel to weight the shortest path connections
 std::vector<std::vector<int>> RAYLIB_EXPORT getRootsAndSegment(std::vector<Vertex> &points, const Cloud &cloud, const Mesh &mesh,
                                                                double max_diameter, double distance_limit, double height_min,
-                                                               double gravity_factor);
+                                                               double gravity_factor, bool alpha_weighting);
 
 }  // namespace ray
 #endif  // RAYLIB_RAYSEGMENT_H
