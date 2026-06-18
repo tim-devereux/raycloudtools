@@ -1,8 +1,3 @@
-// Copyright (c) 2023
-// Commonwealth Scientific and Industrial Research Organisation (CSIRO)
-// ABN 41 687 119 230
-//
-// Author: Thomas Lowe
 #include <nabo/nabo.h>
 #include "rayleaves.h"
 #include "../rayrenderer.h"

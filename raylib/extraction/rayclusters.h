@@ -1,8 +1,3 @@
-// Copyright (c) 2022
-// Commonwealth Scientific and Industrial Research Organisation (CSIRO)
-// ABN 41 687 119 230
-//
-// Author: Thomas Lowe
 #ifndef RAYLIB_CLUSTERS_H
 #define RAYLIB_CLUSTERS_H
 

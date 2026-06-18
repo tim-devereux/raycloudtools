@@ -1,8 +1,3 @@
-// Copyright (c) 2020
-// Commonwealth Scientific and Industrial Research Organisation (CSIRO)
-// ABN 41 687 119 230
-//
-// Author: Kazys Stepanas
 #ifndef RAYTHREADS_H
 #define RAYTHREADS_H
 
