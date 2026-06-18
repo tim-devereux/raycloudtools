@@ -51,9 +51,7 @@ bool RAYLIB_EXPORT writeGeoTiffFloat(const std::string &filename, int x, int y, 
 
 /// This is used for estimating the per-voxel density of a ray cloud
 /// Density represents the surface area per volume, assuming an unbiased distribution of surface angles
-/// It is most effective as a measure of leaf area per volume on vegetation, and is described in:
-/// Lowe, Thomas, et al. "Canopy Density Estimation in Perennial Horticulture Crops Using 3D Spinning LiDAR SLAM."
-/// arXiv preprint arXiv:2007.15652 (2020).
+/// It is most effective as a measure of leaf area per volume on vegetation.
 struct RAYLIB_EXPORT DensityGrid
 {
   static const int min_voxel_hits = 2;
