@@ -23,6 +23,7 @@ TreesParams::TreesParams()
   , segment_branches(false)
   , global_taper(0.012)
   , global_taper_factor(0.3)
+  , point_labels(nullptr)
 {}
 
 /// The main reconstruction algorithm
@@ -33,8 +34,9 @@ Trees::Trees(Cloud &cloud, const Eigen::Vector3d &offset, const Mesh &mesh, cons
   // firstly, get the full set of shortest paths from ground to tips, and the set of roots
   params_ = &params;
 
-  std::vector<std::vector<int>> roots_list = getRootsAndSegment(
-    points_, cloud, mesh, params_->max_diameter, params_->distance_limit, params_->height_min, params_->gravity_factor);
+  std::vector<std::vector<int>> roots_list =
+    getRootsAndSegment(points_, cloud, mesh, params_->max_diameter, params_->distance_limit, params_->height_min,
+                       params_->gravity_factor, params_->point_labels);
 
   // Now we want to convert these paths into a set of branch sections, from root to tips
   // splitting as we go up...
@@ -145,7 +147,8 @@ Trees::Trees(Cloud &cloud, const Eigen::Vector3d &offset, const Mesh &mesh, cons
     sections_[sec_].tip = best_tip;
     sections_[sec_].ends = best_ends;
     nodes = best_nodes;
-    if (sections_[sec_].split_count < 2)
+    // when the trees are pre-labelled we trust the labels, so we don't split a trunk into several trees
+    if (!params_->point_labels && sections_[sec_].split_count < 2)
     {
       double thickness = best_dist; 
       bool points_removed = false;

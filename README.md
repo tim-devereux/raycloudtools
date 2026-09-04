@@ -235,6 +235,8 @@ This gives an example of how the command line tools could be sequenced to analys
 
 <p align="center"><img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/rayextract_trees.png?at=refs%2Fheads%2Fmaster"/></p>
 
+**rayextract trees forest_segmented.ply forest_mesh.ply --segmented** &nbsp;&nbsp;&nbsp; as above, but for a cloud that is already segmented into individual trees. One tree is reconstructed per colour, so the segmentation is taken from the cloud rather than estimated. This accepts the _segmented.ply files that rayextract trees generates (so a hand-corrected segmentation can be re-modelled), and also clouds that are simply coloured one arbitrary colour per tree, from any other segmentation method. Black points are treated as unlabelled, and are attached to whichever tree's paths reach them.
+
 *Optional build dependencies:*
 
 For rayimport/rayexport to work with .las and .laz files (LAS 1.0 through 1.4, including COPC):

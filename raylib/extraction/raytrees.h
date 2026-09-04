@@ -32,6 +32,8 @@ struct RAYLIB_EXPORT TreesParams
   double global_taper;     // forced global taper, uses global_taper_factor to define how much it is applied
   double global_taper_factor; // 0 estimates per-tree tapering, 1 uses per-scan tapering, 0.5 is mid-way on mid-weight trees
   bool use_rays; // use the full rays in order to estimate a smaller radius when points are not all on the real branch
+  const std::vector<int> *point_labels; // optional per-ray tree labels (-1 for unlabelled), one tree is generated
+                                        // per distinct label rather than segmenting the trees from the point data
 };
 
 struct BranchSection;  // forwards declaration
@@ -44,7 +46,9 @@ class RAYLIB_EXPORT Trees
 {
 public:
   /// Constructs the piecewise cylindrical tree structures from the input ray cloud @c cloud
-  /// The ground @c mesh defines the ground and @params are used to control the reconstruction
+  /// The ground @c mesh defines the ground and @params are used to control the reconstruction.
+  /// When @c params.point_labels is supplied the cloud is treated as pre-segmented, so only the
+  /// tree models are estimated, one per label
   Trees(Cloud &cloud, const Eigen::Vector3d &offset, const Mesh &mesh, const TreesParams &params, bool verbose);
 
   /// save the trees representation to a text file
