@@ -1,4 +1,7 @@
-.vscode/
 .idea/
 build*/
 cmake-build*/
+gitignored/
+install/
+test_results/
+treetools/

@@ -1,21 +1,31 @@
 {
-    "name": "RayCloudTools Development",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".."
-    },
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "ms-vscode.cpptools",
-                "ms-vscode.cmake-tools",
-                "twxs.cmake",
-                "ms-vscode.cpptools-extension-pack"
-            ]
-        }
-    },
-    "remoteUser": "root",
-    "forwardPorts": [],
-    "postCreateCommand": "compile_install.sh",
-    "runArgs": ["--security-opt", "label=disable"]
+  "name": "RayCloudTools Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "options": [
+      "--progress=plain"
+    ]
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools-extension-pack"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "LD_LIBRARY_PATH": "${containerEnv:LD_LIBRARY_PATH}:/workspaces/raycloudtools/install/lib",
+    "PATH": "${containerEnv:PATH}:/workspaces/raycloudtools/.devcontainer/commands:/workspaces/raycloudtools/install/bin"
+  },
+  "forwardPorts": [],
+  "postCreateCommand": "build.bash",
+  "remoteUser": "ubuntu",
+  "runArgs": [
+    "--security-opt=label=disable"
+  ],
+  "workspaceFolder": "/workspaces/raycloudtools",
+  "workspaceMount": "type=bind,source=${localWorkspaceFolder},target=/workspaces/raycloudtools"
 }
